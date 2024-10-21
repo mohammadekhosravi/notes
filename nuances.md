@@ -29,3 +29,22 @@ notFound.pop();
 notFound.pop();
 notFound.pop();
 ```
+
+3. Reopening an interface
+
+```typescript
+interface Dog {
+    name: string;
+}
+
+// this is valid
+interface Dog {
+    age: number;
+}
+
+// now for a variable to satisfy Dog interface it should have both name and age properties
+cosnt jessy: Dog = {
+    name: 'Jessy',
+    age: 3,
+}
+```
