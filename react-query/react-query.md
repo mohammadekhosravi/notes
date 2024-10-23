@@ -184,4 +184,4 @@ useQuery({
 
    but this way we tie this two fetch together(error, pending and ...)<br />
    _another way_: use the same technique we use for fetching on demand: `enabled`
-   ![Dependent Query](https://github.com/mohammadekhosravi/)
+   ![Dependent Query](https://github.com/mohammadekhosravi/notes/blob/master/react-query/dependent.png)
