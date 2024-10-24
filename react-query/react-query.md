@@ -114,74 +114,172 @@ useQuery({
 });
 ```
 
-6. staleTime:
-   <br />
-   In React Query terms, `stale` is the opposite of `fresh`. As long as a query is considered fresh, data will only be delivered from the cache. And staleTime is what defines the time (in milliseconds) until a query is considered stale.
-   when a query considered `stale` react-query does _nothing_ until one of four condition below is met:
+6.  staleTime:
+    <br />
+    In React Query terms, `stale` is the opposite of `fresh`. As long as a query is considered fresh, data will only be delivered from the cache. And staleTime is what defines the time (in milliseconds) until a query is considered stale.
+    when a query considered `stale` react-query does _nothing_ until one of four condition below is met:
 
-   - The queryKey changes
-   - A new observer mounts
-   - The window receives a focus event
-   - The device goes online
+    - The queryKey changes
+    - A new observer mounts
+    - The window receives a focus event
+    - The device goes online
 
-   React Query **will always deliver the data from the cache if it exists, even if that data is no longer fresh**.
-   staleTime just tells React Query when to update the cache in the background when a trigger occurs.
+    React Query **will always deliver the data from the cache if it exists, even if that data is no longer fresh**.
+    staleTime just tells React Query when to update the cache in the background when a trigger occurs.
 
-7. gcTime:
-   <br />
-   Amount of time after a query became `inactive` (_there is no observer for that particular query_) that query become garbage collected.
+7.  gcTime:
+    <br />
+    Amount of time after a query became `inactive` (_there is no observer for that particular query_) that query become garbage collected.
 
-8. refetchInterval:
-   used for polling data, `refetchInterval` is smart and if we trigger refetch with other triggers it's counter would reset.
+8.  refetchInterval:
+    used for polling data, `refetchInterval` is smart and if we trigger refetch with other triggers it's counter would reset.
 
-   - you can pass a function to `refetchInterval` for long running task that can finish and if return `false` it would not refetch anymore
+    - you can pass a function to `refetchInterval` for long running task that can finish and if return `false` it would not refetch anymore
 
-   ```typescript
-   refetchInterval: (query) => {
-     if (query.state.data?.finished) {
-       return false;
-     }
+    ```typescript
+    refetchInterval: (query) => {
+      if (query.state.data?.finished) {
+        return false;
+      }
 
-     return 3000; // 3 seconds
-   };
-   ```
+      return 3000; // 3 seconds
+    };
+    ```
 
-9. Dependent Query:
-   when we need to fetch two or more seperate endpoint for getting necessary data we can use this technique:
+9.  Dependent Query:
+    when we need to fetch two or more seperate endpoint for getting necessary data we can use this technique:
 
-   ```typescript
-   async function fetchMovie(title) {
-     const response = await fetch(
-       `https://ui.dev/api/courses/react-query/movies/${title}`,
-     );
+    ```typescript
+    async function fetchMovie(title) {
+      const response = await fetch(
+        `https://ui.dev/api/courses/react-query/movies/${title}`,
+      );
 
-     if (!response.ok) {
-       throw new Error("fetch failed");
-     }
+      if (!response.ok) {
+        throw new Error("fetch failed");
+      }
 
-     return response.json();
-   }
+      return response.json();
+    }
 
-   async function fetchDirector(id) {
-     const response = await fetch(
-       `https://ui.dev/api/courses/react-query/director/${id}`,
-     );
+    async function fetchDirector(id) {
+      const response = await fetch(
+        `https://ui.dev/api/courses/react-query/director/${id}`,
+      );
 
-     if (!response.ok) {
-       throw new Error("fetch failed");
-     }
+      if (!response.ok) {
+        throw new Error("fetch failed");
+      }
 
-     return response.json();
-   }
+      return response.json();
+    }
 
-   async function getMovieWithDirectorDetails(title) {
-     const movie = await fetchMovie(title);
-     const director = await fetchDirector(movie.director);
+    async function getMovieWithDirectorDetails(title) {
+      const movie = await fetchMovie(title);
+      const director = await fetchDirector(movie.director);
 
-     return { movie, director };
-   }
-   ```
+      return { movie, director };
+    }
+    ```
 
-   but this way we tie this two fetch together(error, pending and ...)<br />
-   _another way_: use the same technique we use for fetching on demand: `enabled`
-   ![Dependent Query](https://github.com/mohammadekhosravi/notes/blob/master/react-query/dependent.png)
+    but this way we tie this two fetch together(error, pending and ...)<br />
+    _another way_: use the same technique we use for fetching on demand: `enabled`
+    ![Dependent Query](https://github.com/mohammadekhosravi/notes/blob/master/react-query/dependent.png)
+
+10. Don't destruct the queryClient<br/>
+    It's important to note that you can't destructure properties from the QueryClient.
+
+    ```javascript
+    const { prefetchQuery } = useQueryClient(); // ❌
+    ```
+
+    The reason for this is because the _QueryClient is a class_, and classes can't be destructured in JavaScript without losing the reference to its `this` binding.<br />
+    This is not React Query specific, you'll have the same problem when doing something like.
+
+    ```typescript
+    const { getTime } = new Date();
+    ```
+
+11. Potential Solution to Avoiding Loading State:
+
+    - using queryClient.prefetchQuery()
+    - using placeholderData or initialData
+    - using both technique
+
+12. initialData vs placeholderData:
+    <br />`initialData` is treated as if data is fetched from server and react-query won't make a request for new data until staleTime is passed and a trigger occurred
+    <br />`placeholderDate` is treated as placeholder and react-query would instantly request for data regaredless of staleTime and triggers.
+
+13. using queryClient.setQueryData() inside mutation:<br />
+    React Query doesn't distinguish where data comes from. Data we write to the cache manually will be treated the same as data put into the cache via any other way – like a refetch or prefetch.
+    That means it will also be considered fresh for however long `staleTime` is set to.<br />
+    **`setQueryData` as second parameter receives previousData for a particular query key and you can use that plus mutationData that is passed to `onSuccess` to update cache**
+
+14. difference between when `return queryClient.invalidateQueries` and `queryClient.invalidateQueries`:<br/>
+    by returning a promise from `onSuccess` (which is what `queryClient.invalidateQueries` returns), React Query can wait for the promise to resolve before it considers the mutation complete – avoiding potential UI flashes where the refetch occurs before the mutation has finished.
+
+15. what happens when `invalidateQueries` in called:<br/>
+    when you invalidate a query, it does two things:
+
+    - It refetches all active queries
+    - It marks the remaining queries as stale
+
+    you could add a `refetchType` property of `all` to your query options to force all queries, regardless of their status, to refetch immediately.
+
+    ```javascript
+    queryClient.invalidateQueries({
+      queryKey: ["todos", "list"],
+      refetchType: "all",
+    });
+    ```
+
+16. customizing default:
+
+    - all
+
+    ```javascript
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 10 * 1000,
+        },
+      },
+    });
+    ```
+
+    you can set default option for anything except `queryKey`
+
+    - subset
+
+    ```javascript
+    queryClient.setQueryDefaults(["todos", "detail"], { staleTime: 10 * 1000 }); // this will fuzzy match
+    ```
+
+    - single<br />
+      passing option directly to `useQuery/useMutation/etc`
+
+    _the result configuration for each query_
+
+    ```javascript
+    const finalOptions = {
+      ...queryClientOptions,
+      ...setQueryDefaultOptions,
+      ...optionsFromUseQuery,
+    };
+    ```
+
+17. react-query optimizations:
+
+    - Structural Sharing:<br /> you can use the `data object` with React.memo or include it in the dependency array for useEffect or useMemo without worrying about unnecessary effects or calculations.
+    - observers: <br /> Observers are the glue between the Query Cache and any React component, and they live outside the React component tree. What this means is that when a queryFn re-runs and the Query cache is updated, at that moment, the Observer can decide whether or not to inform the React component about that change.
+    - Tracked Properties:<br />
+      When React Query creates the result object returned from useQuery, it does so with `custom getters`.
+      <br />Why is this important? Because it allows the Observer to understand and keep track of which fields have been accessed in the render function and in doing so, only re-render the component when those fields actually change.
+      <br />For example, if a component doesn't use fetchStatus, it doesn't make sense for that component to re-render just because the fetchStatus changes from idle to fetching and back again. It's Tracked Properties that make this possible and ensure that components are always up-to-date, while keeping their render count to the necessary minimum.
+    - select: <br />
+      If your queryFn returns extra data that isn't needed in the component, you can use the select option to filter out the data that the component doesn't need – and therefore, subscribe to a subset of the data and only re-render the component when necessary.
+
+18. useDebounced vs abortSignal:<br />
+    react-query pass an `signal` parameter to queryFn that can be used to cancel queries for example in search inputs.
+    in this case only the last searchTerm would be inside of QueryCache and our server have less load.<br />
+    we also can `debounce` a query and only make a request on defined intervals.
