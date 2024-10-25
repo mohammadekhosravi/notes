@@ -283,3 +283,6 @@ useQuery({
     react-query pass an `signal` parameter to queryFn that can be used to cancel queries for example in search inputs.
     in this case only the last searchTerm would be inside of QueryCache and our server have less load.<br />
     we also can `debounce` a query and only make a request on defined intervals.
+
+19. Error Handling:<br />
+    - **YOU SHOULD NOT CATCH THE ERROR INSIDE queryFn YOURSELF WITHOUT THROWING IT OUT AGAIN**
