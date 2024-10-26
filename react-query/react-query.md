@@ -285,4 +285,19 @@ useQuery({
     we also can `debounce` a query and only make a request on defined intervals.
 
 19. Error Handling:<br />
+
     - **YOU SHOULD NOT CATCH THE ERROR INSIDE queryFn YOURSELF WITHOUT THROWING IT OUT AGAIN**
+
+20. Offline Support:<br />
+    In the scenario of an offline device, React Query will mark the `fetchStatus` of the query as `paused`, without even attempting to execute the `queryFn`. Then, if and when the device comes back online, React Query will automatically resume the query as normal.
+
+    If we go offline react-query would queue `mutations` and when we came back online do them in the same exact order.
+    and if we don't want to get `in between state` when we come back online we can guard the query invalidation.
+
+    ```javascript
+    // this tell react query to run invalidateQueries if and only if there is `one` mutation related to ["todos", "list"] is currently running
+    // for example if we toggle 10 switches when device was offline, we don't get the in between states with this technique
+    if (queryClient.isMutating({ mutationKey: ["todos", "list"] }) === 1) {
+      return queryClient.invalidateQueries({ queryKey: ["todos", "list"] });
+    }
+    ```
