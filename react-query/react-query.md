@@ -289,10 +289,11 @@ useQuery({
     - **YOU SHOULD NOT CATCH THE ERROR INSIDE queryFn YOURSELF WITHOUT THROWING IT OUT AGAIN**
 
 20. Offline Support:<br />
-    In the scenario of an offline device, React Query will mark the `fetchStatus` of the query as `paused`, without even attempting to execute the `queryFn`. Then, if and when the device comes back online, React Query will automatically resume the query as normal.
 
-    If we go offline react-query would queue `mutations` and when we came back online do them in the same exact order.
-    and if we don't want to get `in between state` when we come back online we can guard the query invalidation.
+    - In the scenario of an offline device, React Query will mark the `fetchStatus` of the query as `paused`, without even attempting to execute the `queryFn`. Then, if and when the device comes back online, React Query will automatically resume the query as normal.
+
+    - If we go offline react-query would queue `mutations` and when we came back online do them in the same exact order.
+      and if we don't want to get `in between state` when we come back online we can guard the query invalidation.
 
     ```javascript
     // this tell react query to run invalidateQueries if and only if there is `one` mutation related to ["todos", "list"] is currently running
@@ -301,3 +302,6 @@ useQuery({
       return queryClient.invalidateQueries({ queryKey: ["todos", "list"] });
     }
     ```
+
+    - if we set `cache-control` header in our responses that come from backend. browser would not hit the server for duration and serve the request from cache until it's expires
+      <br /> if we set `networkMode: "offlineFirst"` in query options. if data is in browser cache, react-query will invoke `queryFn` as normal.
